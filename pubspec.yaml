@@ -1,0 +1,10 @@
+name: blmpay
+version: 0.1.0
+description: Official Dart and Flutter SDK for the BLMPay REST API.
+repository: https://github.com/Winnie7676/blmpay-sdk-flutter
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  http: ^1.2.2
