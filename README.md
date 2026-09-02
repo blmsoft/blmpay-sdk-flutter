@@ -25,15 +25,39 @@ Example:
 ```dart
 final blmpay = BlmPayClient(
   apiKey: const String.fromEnvironment('BLMPAY_API_KEY'),
+  integrationOrigin: 'https://api.example.com',
 );
 
 final balance = await blmpay.getBalance();
 ```
 
+## Domain-bound API keys
+
+When `integrationOrigin` is set, the SDK automatically sends:
+
+```http
+X-BLMPay-Origin: https://api.example.com
+```
+
+Use the same HTTPS host saved on the API key in BLMPay. A mismatched host may return `403 integration_domain_not_allowed`; a restricted key without an identifiable origin may return `403 integration_origin_required`.
+
+Existing legacy API keys that have no configured domain remain backward compatible and can keep working without `integrationOrigin`.
+
+## Important mobile security
+
+Do **not** hard-code a privileged live BLMPay merchant API key in an APK, IPA or public web build. For production customer-facing apps, the recommended architecture is:
+
+1. Flutter app calls your secured backend.
+2. Your backend stores the BLMPay API key.
+3. Your backend calls BLMPay and sends the configured `X-BLMPay-Origin` automatically via the SDK.
+
+The BLMPay APK review workflow is an additional integration review layer; it does not make embedded secrets safe.
+
+## API coverage
+
 The SDK covers payments, balance, payment links, invoices, payouts, payout fee quotes, supported banks, recipient lookup, webhooks and USDT.
 
-Do not hard-code a live BLMPay merchant secret key in an APK, IPA or public web build. For production customer-facing apps, keep privileged BLMPay credentials on your backend and let the Flutter app call that backend.
-
 OpenAPI: https://github.com/Winnie7676/blmpay-openapi
+MCP: https://github.com/Winnie7676/blmpay-mcp
 
 MIT License. Powered by BLMSoft.
