@@ -8,10 +8,24 @@ class BlmPayClient {
   final String baseUrl;
   final Duration timeout;
   final http.Client _http;
+  String? _integrationOrigin;
 
-  BlmPayClient({required this.apiKey,this.baseUrl = 'https://pay.blmtec.co.tz/api/v1',this.timeout = const Duration(seconds: 30),http.Client? httpClient,}) : _http = httpClient ?? http.Client() {
+  BlmPayClient({
+    required this.apiKey,
+    this.baseUrl = 'https://pay.blmtec.co.tz/api/v1',
+    this.timeout = const Duration(seconds: 30),
+    String? integrationOrigin,
+    http.Client? httpClient,
+  }) : _http = httpClient ?? http.Client(),
+       _integrationOrigin = _normalizeIntegrationOrigin(integrationOrigin) {
     if (apiKey.trim().isEmpty) throw ArgumentError('BLMPay apiKey is required.');
   }
+
+  BlmPayClient setIntegrationOrigin(String? integrationOrigin) {
+    _integrationOrigin = _normalizeIntegrationOrigin(integrationOrigin);
+    return this;
+  }
+
   Future<Map<String, dynamic>> listPayments({Map<String, dynamic>? query}) => _request('GET','/payments',query:query);
   Future<Map<String, dynamic>> getPayment(String reference) => _request('GET','/payments/${Uri.encodeComponent(reference)}');
   Future<Map<String, dynamic>> createPayment(Map<String,dynamic> body,{String? idempotencyKey}) => _request('POST','/payments',body:body,idempotencyKey:idempotencyKey);
@@ -37,18 +51,50 @@ class BlmPayClient {
 
   Future<Map<String,dynamic>> _request(String method,String path,{Map<String,dynamic>? body,Map<String,dynamic>? query,String? idempotencyKey}) async {
     var uri = Uri.parse('${baseUrl.replaceFirst(RegExp(r'/$'), '')}$path');
-    if (query != null && query.isNotEmpty) { final q = <String,String>{}; query.forEach((key,value){ if(value != null && value.toString().isNotEmpty) q[key]=value.toString(); }); uri = uri.replace(queryParameters:q); }
+    if (query != null && query.isNotEmpty) {
+      final q = <String,String>{};
+      query.forEach((key,value){ if(value != null && value.toString().isNotEmpty) q[key]=value.toString(); });
+      uri = uri.replace(queryParameters:q);
+    }
     final headers=<String,String>{'Authorization':'Bearer $apiKey','Accept':'application/json'};
+    if(_integrationOrigin != null) headers['X-BLMPay-Origin']=_integrationOrigin!;
     if(body != null) headers['Content-Type']='application/json';
     if(idempotencyKey != null && idempotencyKey.trim().isNotEmpty) headers['Idempotency-Key']=idempotencyKey.trim();
     try {
       late http.Response response;
-      switch(method){case 'POST': response=await _http.post(uri,headers:headers,body:body==null?null:jsonEncode(body)).timeout(timeout); break; case 'DELETE': response=await _http.delete(uri,headers:headers,body:body==null?null:jsonEncode(body)).timeout(timeout); break; default: response=await _http.get(uri,headers:headers).timeout(timeout);}
-      dynamic decoded; try { decoded=jsonDecode(response.body); } catch (_) { throw BlmPayException('BLMPay returned invalid JSON.',statusCode:response.statusCode,response:response.body); }
+      switch(method){
+        case 'POST':
+          response=await _http.post(uri,headers:headers,body:body==null?null:jsonEncode(body)).timeout(timeout);
+          break;
+        case 'DELETE':
+          response=await _http.delete(uri,headers:headers,body:body==null?null:jsonEncode(body)).timeout(timeout);
+          break;
+        default:
+          response=await _http.get(uri,headers:headers).timeout(timeout);
+      }
+      dynamic decoded;
+      try { decoded=jsonDecode(response.body); } catch (_) { throw BlmPayException('BLMPay returned invalid JSON.',statusCode:response.statusCode,response:response.body); }
       final data=decoded is Map<String,dynamic>?decoded:Map<String,dynamic>.from(decoded as Map);
       if(response.statusCode<200 || response.statusCode>=300){throw BlmPayException((data['message']??'BLMPay request failed.').toString(),statusCode:response.statusCode,errorCode:data['error_code']?.toString(),response:data);}
       return data;
-    } on TimeoutException { throw const BlmPayException('BLMPay request timed out.'); } on BlmPayException { rethrow; } catch(e){ throw BlmPayException('BLMPay connection failed.',response:e); }
+    } on TimeoutException {
+      throw const BlmPayException('BLMPay request timed out.');
+    } on BlmPayException {
+      rethrow;
+    } catch(e){
+      throw BlmPayException('BLMPay connection failed.',response:e);
+    }
   }
+
+  static String? _normalizeIntegrationOrigin(String? origin) {
+    final value = origin?.trim() ?? '';
+    if (value.isEmpty) return null;
+    final uri = Uri.tryParse(value);
+    if (uri == null || uri.scheme.toLowerCase() != 'https' || uri.host.isEmpty) {
+      throw ArgumentError('BLMPay integrationOrigin must be a valid HTTPS URL, for example https://example.com.');
+    }
+    return value;
+  }
+
   void close() => _http.close();
 }
