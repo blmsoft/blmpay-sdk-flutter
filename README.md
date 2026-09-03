@@ -10,7 +10,7 @@ Until the pub.dev release is published, add the official repository to `pubspec.
 dependencies:
   blmpay:
     git:
-      url: https://github.com/Winnie7676/blmpay-sdk-flutter.git
+      url: https://github.com/blmsoft/blmpay-sdk-flutter.git
       ref: main
 ```
 
@@ -57,7 +57,7 @@ The BLMPay APK review workflow is an additional integration review layer; it doe
 
 The SDK covers payments, balance, payment links, invoices, payouts, payout fee quotes, supported banks, recipient lookup, webhooks and USDT.
 
-OpenAPI: https://github.com/Winnie7676/blmpay-openapi
-MCP: https://github.com/Winnie7676/blmpay-mcp
+OpenAPI: https://github.com/blmsoft/blmpay-openapi
+MCP: https://github.com/blmsoft/blmpay-mcp
 
 MIT License. Powered by BLMSoft.
