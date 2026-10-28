@@ -1,6 +1,6 @@
 name: blmpay
-version: 0.2.0
-description: Official Dart and Flutter SDK for the BLMPay REST API with domain-bound API key support.
+version: 0.3.0
+description: Official Dart and Flutter SDK for BLMPay API v2 with HMAC-SHA256 signing and domain restriction support.
 repository: https://github.com/blmsoft/blmpay-sdk-flutter
 
 environment:
@@ -8,3 +8,4 @@ environment:
 
 dependencies:
   http: ^1.2.2
+  crypto: ^3.0.6
